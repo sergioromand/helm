@@ -7,8 +7,10 @@
 
 
 int blockInputs;
-int pivotStatus;    //0 = parallel to bed, 1 = perp to bed
+int pivotStatus;    //0 = close, 1 = away
 int home;			//1 when the table is at its home state
+int zTop; 			//1 when the table is at the top
+
 
 //setup function
 int setup(void) {
@@ -35,11 +37,29 @@ int setup(void) {
 
 //set the table to its home state
 int home(void) {
-	//calling this drives the table as high as it can go, and rotatest it away from the human (status 0)
-	blockInputs = 1; 
-	if(status) {
-		//rotate home
+	//calling this drives the table as high as it can go, and rotatest it away from the human (status 0) 
+	if(!home) {
+		blockInputs = 1;				//raise flag
+		if(!pivotStatus) {
+			//rotate home
+			pivotStatus = 1;
+		}
+		if(!zTop) {
+			//all other values are 0
+			PIND &= ~(1 << PORTD1);     //set to low
+			PIND &= ~(1 << PORTD2);     //set to low
+			//set to high
+			PIND |= (1 << PORTD0);
+			//time to drive to the top
+			delay(500ms);
+			//done driving
+			PIND &= ~(1 << PORTD0);     //set to low 
+			zTop = 1;
+		}	
+		home = 1;
+		blockInputs = 0;				//clear flag						
 	}
+
 	
 
 }
@@ -52,23 +72,25 @@ int main(void) {
 	while(1) {
 		//z-up button
 		if(!blockInputs && (PINB && 0x01)) {
-			blockInputs = 1;
-			//all other values are 0
-			PIND &= ~(1 << PORTD1);     //set to low
-			PIND &= ~(1 << PORTD2);     //set to low
-			//set to high
-			PIND |= (1 << PORTD0);
-			//keep it high
-			while(PINB && 0x01) {
+			if(!zTop) {
+				blockInputs = 1;			//raise flag
+				//all other values are 0
+				PIND &= ~(1 << PORTD1);     //set to low
+				PIND &= ~(1 << PORTD2);     //set to low
+				//set to high
+				PIND |= (1 << PORTD0);
+				//keep it high
+				while(PINB && 0x01) {
+				}
+				//done driving
+				PIND &= ~(1 << PORTD0);     //set to low 
+				blockInputs = 0;			//clear flag
 			}
-			//done driving
-			PIND &= ~(1 << PORTD0);     //set to low 
-			blockInputs = 0;			//raise flag
 		}
 
 		//z-down button
 		if(!blockInputs && ((PINB && 0x02) >> 0x01)) {
-			blockInputs = 1;
+			blockInputs = 1;			//raise flag
 			//all other values are 0
 			PIND &= ~(1 << PORTD0);     //set to low
 			PIND &= ~(1 << PORTD2);     //set to low
@@ -79,22 +101,22 @@ int main(void) {
 			}
 			//done driving
 			PIND &= ~(1 << PORTD1);     //set to low 
-			blockInputs = 0;			//raise flag
+			blockInputs = 0;			//clear flag
+			zTop = 0;					//can't be at the top anymore
+			home = 0;					//can't be home anymore
 		}
 		//pivot button - need to take care of the rotation (maybe using delay.h?)
 		if(!blockInputs && ((PINB && 0x03) >> 0x02)) {
-			blockInputs = 1;
-			//all other values are 0
-			PIND &= ~(1 << PORTD0);     //set to low
-			PIND &= ~(1 << PORTD1);     //set to low
-			//set to high
-			PIND |= (1 << PORTD2);
-			//keep it high
-			while(((PINB && 0x03) >> 0x02)) {
+			blockInputs = 1;			//raise flag
+			//PIVOT
+			pivotStatus = !pivotStatus; //opposite status now
+			if(pivotStatus && zTop) {
+				home = 1;
 			}
-			//done driving
-			PIND &= ~(1 << PORTD2);     //set to low 
-			blockInputs = 0;			//raise flag
+			else {
+				home = 0;
+			}							//reset the home status
+			blockInputs = 0;			//clear flag
 		}
 
 	}
