@@ -10,8 +10,8 @@ int blockInputs;
 int pivotStatus;    //0 = close, 1 = away
 int home;			//1 when the table is at its home state
 int zTop; 			//1 when the table is at the top
-int linDelay;		//time in milliseconds to reach the top
-int pivotDelay;		//time in milliseconds to reach the top
+const int linDelay = 200;		//time in milliseconds to reach the top
+const int pivotDelay = 200;		//time in milliseconds to reach the top
 
 
 //setup function
@@ -38,7 +38,7 @@ int setup(void) {
 }
 
 //set the table to its home state
-int home(void) {
+int homeSet(void) {
 	//calling this drives the table as high as it can go, and rotatest it away from the human (status 0) 
 	if(!home) {
 		blockInputs = 1;				//raise flag
@@ -49,7 +49,7 @@ int home(void) {
 			//set to high
 			PIND |= (1 << PORTD2);
 			//keep it high
-			delay(pivotDelay);
+			_delay_ms(pivotDelay);
 			//done driving
 			PIND &= ~(1 << PORTD2);     //set to low 
 			pivotStatus = 1;
@@ -61,7 +61,7 @@ int home(void) {
 			//set to high
 			PIND |= (1 << PORTD0);
 			//time to drive to the top
-			delay(linDelay);
+			_delay_ms(linDelay);
 			//done driving
 			PIND &= ~(1 << PORTD0);     //set to low 
 			zTop = 1;
@@ -77,7 +77,7 @@ int home(void) {
 int main(void) {
 
 	setup();
-	home();
+	homeSet();
 
 	while(1) {
 		//z-up button
@@ -124,7 +124,7 @@ int main(void) {
 			//set to high
 			PIND |= (1 << PORTD2);
 			//keep it high
-			delay(pivotDelay);
+			_delay_ms(pivotDelay);
 			//done driving
 			PIND &= ~(1 << PORTD2);     //set to low 
 			blockInputs = 0;			//clear flag

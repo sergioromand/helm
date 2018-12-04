@@ -1,6 +1,6 @@
 name = output
 device = /dev/tty.usbmodem14601
-src = 2_1_2.c
+src = main.c
 flags = -std=c11 -Os
 baud = 9600
 
