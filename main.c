@@ -10,6 +10,8 @@ int blockInputs;
 int pivotStatus;    //0 = close, 1 = away
 int home;			//1 when the table is at its home state
 int zTop; 			//1 when the table is at the top
+int linDelay;		//time in milliseconds to reach the top
+int pivotDelay;		//time in milliseconds to reach the top
 
 
 //setup function
@@ -41,7 +43,15 @@ int home(void) {
 	if(!home) {
 		blockInputs = 1;				//raise flag
 		if(!pivotStatus) {
-			//rotate home
+			//all other values are 0
+			PIND &= ~(1 << PORTD0);     //set to low
+			PIND &= ~(1 << PORTD1);     //set to low
+			//set to high
+			PIND |= (1 << PORTD2);
+			//keep it high
+			delay(pivotDelay);
+			//done driving
+			PIND &= ~(1 << PORTD2);     //set to low 
 			pivotStatus = 1;
 		}
 		if(!zTop) {
@@ -51,7 +61,7 @@ int home(void) {
 			//set to high
 			PIND |= (1 << PORTD0);
 			//time to drive to the top
-			delay(500ms);
+			delay(linDelay);
 			//done driving
 			PIND &= ~(1 << PORTD0);     //set to low 
 			zTop = 1;
@@ -108,7 +118,16 @@ int main(void) {
 		//pivot button - need to take care of the rotation (maybe using delay.h?)
 		if(!blockInputs && ((PINB && 0x03) >> 0x02)) {
 			blockInputs = 1;			//raise flag
-			//PIVOT
+			//all other values are 0
+			PIND &= ~(1 << PORTD0);     //set to low
+			PIND &= ~(1 << PORTD1);     //set to low
+			//set to high
+			PIND |= (1 << PORTD2);
+			//keep it high
+			delay(pivotDelay);
+			//done driving
+			PIND &= ~(1 << PORTD2);     //set to low 
+			blockInputs = 0;			//clear flag
 			pivotStatus = !pivotStatus; //opposite status now
 			if(pivotStatus && zTop) {
 				home = 1;
