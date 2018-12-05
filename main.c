@@ -35,6 +35,12 @@ int setup(void) {
 	PORTC |= (1 << PC1);
 	PORTC |= (1 << PC2); 
 
+	//Kill Switches (from actuation)
+	DDRC &= ~(1 << PC3);    //Kill-Switch Home
+	DDRC &= ~(1 << PC4);	//Kill-Switch Away
+	PORTC |= (1 << PC3);	//set to pull-up
+	PORTC |= (1 << PC4); 
+
 	//outputs 
 	//Linear Actuator
 	DDRB |= (1 << PB0);      //Linear- IA
@@ -81,19 +87,23 @@ int rotation(int speed) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 	if(!pivotStatus) {
 		//pivotStatus = 0- we're currently close to the patient
-		//Turn on pivot motor
+		//Turn on pivot motor if we're not away already
 		PORTD &= ~(1 << PD6);     //set PIA to low
-		PORTD |= (1 << PD7);     //set PIB to high
-		_delay_ms(pivotDelay);
-		PORTD &= ~(1 << PD7);     //set PIB to low
+		if((PINC & 0x08) >> 0x03) {
+			PORTD |= (1 << PD7);     //set PIB to high
+			while ((PINC & 0x08) >> 0x03)
+			PORTD &= ~(1 << PD7);     //set PIB to low
+		}
 	}
 	else {
 		//pivotStatus = 1- we're currently far from the patient
-		//Turn on pivot motor
+		//Turn on pivot motor if we're not close already 
 		PORTD &= ~(1 << PD7);     //set PIB to low
-		PORTD |= (1 << PD6);     //set PIA to high
-		_delay_ms(pivotDelay);
-		PORTD &= ~(1 << PD6);     //set PIA to low
+		if((PINC & 0x10) >> 0x04) {
+			PORTD |= (1 << PD6);     //set PIA to high
+			while ((PINC & 0x10) >> 0x04)
+			PORTD &= ~(1 << PD6);     //set PIB to low
+		}
 	}
 	
 	blockInputs = 0;			//clear flag
