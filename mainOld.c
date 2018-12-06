@@ -19,27 +19,14 @@ int setup(void) {
 	//Set the input and output pins
 
 	//inputs
-	//Wireless inputs
-	DDRD &= ~(1 << PD2);     //Z-up- Wireless
-	DDRD &= ~(1 << PD3);     //Z-down- Wireless
-	DDRD &= ~(1 << PD4);     //Pivot- Wireless
+	DDRD &= ~(1 << PD1);	 //home
+	DDRD &= ~(1 << PD2);     //Z-up
+	DDRD &= ~(1 << PD3);     //Z-down
+	DDRD &= ~(1 << PD4);     //Pivot
+	PORTD |= (1 << PD1); 
 	PORTD |= (1 << PD2);     //set to pull-up
 	PORTD |= (1 << PD3);
 	PORTD |= (1 << PD4); 
-
-	//Button interface inputs
-	//DDRC &= ~(1 << PC0);	//Z-up- Button
-	//DDRC &= ~(1 << PC1);	//Z-down- Button
-	//DDRC &= ~(1 << PC2);	//Pivot- Button
-	//PORTC |= (1 << PC0);     //set to pull-up
-	//PORTC |= (1 << PC1);
-	//PORTC |= (1 << PC2); 
-
-	//Kill Switches (from actuation)
-	//DDRC &= ~(1 << PC3);    //Kill-Switch Home
-	//DDRC &= ~(1 << PC4);	//Kill-Switch Away
-	//PORTC |= (1 << PC3);	//set to pull-up
-	//PORTC |= (1 << PC4); 
 
 	//outputs 
 	//Linear Actuator
@@ -47,7 +34,21 @@ int setup(void) {
 	DDRB |= (1 << PB1);		 //Linear- PWM
 	DDRB |= (1 << PB3);		 //Linear- IB	
 	PORTB &= ~(1 << PB3);    //LIB is low 
-	PORTB &= ~(1 << PB0);	 //LIA is low 
+	PORTB &= ~(1 << PB0);	 //LIA is low
+
+	//Button interface inputs
+	DDRC &= ~(1 << PC0);	//Z-up- Button
+	DDRC &= ~(1 << PC1);	//Z-down- Button
+	DDRC &= ~(1 << PC2);	//Pivot- Button
+	PORTC |= (1 << PC0);     //set to pull-up
+	PORTC |= (1 << PC1);
+	PORTC |= (1 << PC2); 
+
+	//Kill Switches (from actuation)
+	DDRC &= ~(1 << PC3);    //Kill-Switch Home
+	DDRC &= ~(1 << PC4);	//Kill-Switch Away
+	PORTC |= (1 << PC3);	//set to pull-up
+	PORTC |= (1 << PC4); 
 
 
 	//Pivot
@@ -87,25 +88,21 @@ int rotation(int speed) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 	if(!pivotStatus) {
 		//pivotStatus = 0- we're currently close to the patient
-		//Turn on pivot motor if we're not away already
+		//Turn on pivot motor
 		PORTD &= ~(1 << PD6);     //set PIA to low
-		if((PINC & 0x08) >> 0x03) {
-			PORTD |= (1 << PD7);     //set PIB to high
-			//while ((PINC & 0x08) >> 0x03)
-			_delay_ms(pivotDelay);
-			PORTD &= ~(1 << PD7);     //set PIB to low
+		PORTD |= (1 << PD7);     //set PIB to high
+		while ((PINC & 0x08) >> 0x03) {
 		}
+		PORTD &= ~(1 << PD7);     //set PIB to low
 	}
 	else {
 		//pivotStatus = 1- we're currently far from the patient
-		//Turn on pivot motor if we're not close already 
+		//Turn on pivot motor
 		PORTD &= ~(1 << PD7);     //set PIB to low
-		if((PINC & 0x10) >> 0x04) {
-			PORTD |= (1 << PD6);     //set PIA to high
-			//while ((PINC & 0x10) >> 0x04)
-			_delay_ms(pivotDelay);
-			PORTD &= ~(1 << PD6);     //set PIB to low
+		PORTD |= (1 << PD6);     //set PIA to high
+		while ((PINC & 0x10) >> 0x04) {
 		}
+		PORTD &= ~(1 << PD6);     //set PIA to low
 	}
 	
 	blockInputs = 0;			//clear flag
@@ -151,10 +148,16 @@ int main(void) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 
 	while(1) {
+		//home button
+		if(!blockInputs) {
+			if(!((PIND & 0x02) >> 0x01)) {
+				homeSet();
+			}
+		}
 		//z-up button
 		if(!blockInputs) {
-			if((!((PIND & 0x04) >> 0x02)) | (!(PINC & 0x01))) {
-				if(!zTop) {
+			if(!zTop) {
+				if((!((PIND & 0x04) >> 0x02))) {
 					blockInputs = 1;		  //raise flag
 					//Turn off pivot motor
 					PORTD &= ~(1 << PD6);     //set PIA to low
@@ -163,7 +166,22 @@ int main(void) {
 					PORTB &= ~(1 << PB3);	  //set LIB to low
 					PORTB |= (1 << PB0);	  //set LIA to high
 					//drive until there's no more input
-					while(!((PIND & 0x04) >> 0x02) | !(PINC & 0x01)) {
+					while((!((PIND & 0x04) >> 0x02))) {
+					}
+					//done driving
+					PORTB &= ~(1 << PB0);     //set LIA to low 
+					blockInputs = 0; 		  //clear the flag
+				}
+				else if(!(PINC & 0x01)) {
+					blockInputs = 1;		  //raise flag
+					//Turn off pivot motor
+					PORTD &= ~(1 << PD6);     //set PIA to low
+					PORTD &= ~(1 << PD7);     //set PIB to low
+					//drive up
+					PORTB &= ~(1 << PB3);	  //set LIB to low
+					PORTB |= (1 << PB0);	  //set LIA to high
+					//drive until there's no more input
+					while(!(PINC & 0x01)) {
 					}
 					//done driving
 					PORTB &= ~(1 << PB0);     //set LIA to low 
@@ -173,35 +191,64 @@ int main(void) {
 		}
 
 		//z-down button
-		if(!blockInputs & (!((PIND & 0x08) >> 0x03) | !((PINC & 0x02) >> 0x01))) {
-			blockInputs = 1;			//raise flag
-			//Turn off pivot motor
-			PORTD &= ~(1 << PD6);     //set PIA to low
-			PORTD &= ~(1 << PD7);     //set PIB to low
-			//drive up
-			PORTB &= ~(1 << PB0);	  //set LIA to low
-			PORTB |= (1 << PB3);	  //set LIB to high
-			//drive until there's no more input
-			while(!((PIND & 0x08) >> 0x03) | !((PINC & 0x02) >> 0x01)) {
+		if(!blockInputs) {
+			if(!((PIND & 0x08) >> 0x03)) {
+				blockInputs = 1;			//raise flag
+				//Turn off pivot motor
+				PORTD &= ~(1 << PD6);     //set PIA to low
+				PORTD &= ~(1 << PD7);     //set PIB to low
+				//drive up
+				PORTB &= ~(1 << PB0);	  //set LIA to low
+				PORTB |= (1 << PB3);	  //set LIB to high
+				//drive until there's no more input
+				while(!((PIND & 0x08) >> 0x03)) {
+				}
+				//done driving
+				PORTB &= ~(1 << PB3);     //set LIB to low 
+				blockInputs = 0; 		  //clear the flag
+				zTop = 0;				  //can't be at the top anymore
+				home = 0;				  //can't be home anymore
 			}
-			//done driving
-			PORTB &= ~(1 << PB3);     //set LIB to low 
-			blockInputs = 0; 		  //clear the flag
-			zTop = 0;				  //can't be at the top anymore
-			home = 0;				  //can't be home anymore
-		}
+			else if(!((PINC & 0x02) >> 0x01)) {
+				blockInputs = 1;			//raise flag
+				//Turn off pivot motor
+				PORTD &= ~(1 << PD6);     //set PIA to low
+				PORTD &= ~(1 << PD7);     //set PIB to low
+				//drive up
+				PORTB &= ~(1 << PB0);	  //set LIA to low
+				PORTB |= (1 << PB3);	  //set LIB to high
+				//drive until there's no more input
+				while(!((PINC & 0x02) >> 0x01)) {
+				}
+				//done driving
+				PORTB &= ~(1 << PB3);     //set LIB to low 
+				blockInputs = 0; 		  //clear the flag
+				zTop = 0;				  //can't be at the top anymore
+				home = 0;				  //can't be home anymore
+			}
+		} 
 		
 		//pivot button - need to take care of the rotation (maybe using delay.h?)
-		if(!blockInputs & (!((PIND & 0x10) >> 0x04) | !((PINC & 0x04)>> 0x02))) {
-			rotation(pivotStatus);
-			if(pivotStatus & zTop) {
+		if(!blockInputs) {
+			if(!((PIND & 0x10) >> 0x04)) {
+				rotation(pivotStatus);
+				if(pivotStatus & zTop) {
 					home = 1;
+				}
+				else {
+					home = 0;
+				}		
 			}
-			else {
-				home = 0;
-			}		
+			else if(!((PINC & 0x04) >> 0x02)) {
+				rotation(pivotStatus);
+				if(pivotStatus & zTop) {
+					home = 1;
+				}
+				else {
+					home = 0;
+				}		
+			}
 		}
 	}
 }
-
 
