@@ -222,7 +222,7 @@ int main(void) {
 				PORTB &= ~(1 << PB0);	  //set LIA to low
 				PORTB |= (1 << PB3);	  //set LIB to high
 				//drive until there's no more input
-				while(!((PIND & 0x08) >> 0x03)) {
+				while(!((PIND & 0x08) >> 0x03) & voltage < 600) {
 				}
 				//done driving
 				PORTB &= ~(1 << PB3);     //set LIB to low 
@@ -239,7 +239,7 @@ int main(void) {
 				PORTB &= ~(1 << PB0);	  //set LIA to low
 				PORTB |= (1 << PB3);	  //set LIB to high
 				//drive until there's no more input
-				while(!((PINC & 0x02) >> 0x01)) {
+				while(!((PINC & 0x02) >> 0x01) & voltage < 600) {
 				}
 				//done driving
 				PORTB &= ~(1 << PB3);     //set LIB to low 
