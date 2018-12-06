@@ -20,11 +20,11 @@ int setup(void) {
 	//Set the input and output pins
 
 	//inputs
-	DDRD &= ~(1 << PB4);	 //home
+	DDRB &= ~(1 << PB5);	 //home
 	DDRD &= ~(1 << PD2);     //Z-up
 	DDRD &= ~(1 << PD3);     //Z-down
 	DDRD &= ~(1 << PD4);     //Pivot
-	PORTD |= (1 << PB4); 
+	PORTB |= (1 << PB5); 
 	PORTD |= (1 << PD2);     //set to pull-up
 	PORTD |= (1 << PD3);
 	PORTD |= (1 << PD4); 
@@ -150,12 +150,6 @@ int main(void) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 
 	while(1) {
-		//home button
-		if(!blockInputs) {
-			if(!((PINB & 0x10) >> 0x04)) {
-				homeSet();
-			}
-		}
 		//z-up button
 		if(!blockInputs) {
 			if(!zTop) {
@@ -249,6 +243,12 @@ int main(void) {
 				else {
 					home = 0;
 				}		
+			}
+		}
+		//home button
+		if(!blockInputs) {
+			if(!((PINB & 0x20) >> 0x05)) {
+				homeSet();
 			}
 		}
 	}

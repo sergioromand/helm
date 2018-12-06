@@ -4,6 +4,8 @@
 
 #include <avr/io.h>
 #include "util/delay.h"
+#include "uart.h"
+#include <avr/interrupt.h>
 
 
 int blockInputs;
@@ -11,19 +13,40 @@ int pivotStatus;    //0 = close, 1 = away
 int home;			//1 when the table is at its home state
 int zTop; 			//1 when the table is at the top
 const int linDelay = 2000;		//time in milliseconds to reach the top
-const int pivotDelay = 2000;	//time in milliseconds to reach the top
+int voltage; 
 
+void startConversion() {
+	ADCSRA |= (1 << ADSC);
+} 
+
+void setupADC() {
+	ADMUX |= (1 << REFS0); 
+	ADMUX |= (1 << MUX0); 
+	ADMUX |= (1 << MUX2); 
+	ADCSRA |= (1 << ADEN); 
+	ADCSRA |= (1 << ADIE); 
+	ADCSRA |=  (1 << ADPS0); 
+	ADCSRA |= (1 << ADPS1);
+	ADCSRA |= (1 << ADPS2);
+	startConversion(); 
+}
+
+
+ISR(ADC_vect) {
+	voltage = ADC; 
+	startConversion();
+}
 
 //setup function
 int setup(void) {
 	//Set the input and output pins
 
 	//inputs
-	DDRD &= ~(1 << PD1);	 //home
+	DDRB &= ~(1 << PB5);	 //home
 	DDRD &= ~(1 << PD2);     //Z-up
 	DDRD &= ~(1 << PD3);     //Z-down
 	DDRD &= ~(1 << PD4);     //Pivot
-	PORTD |= (1 << PD1); 
+	PORTB |= (1 << PB5); 
 	PORTD |= (1 << PD2);     //set to pull-up
 	PORTD |= (1 << PD3);
 	PORTD |= (1 << PD4); 
@@ -129,7 +152,7 @@ int homeSet(void) {
 			_delay_ms(linDelay);
 			//done driving
 			PORTB &= ~(1 << PB0);     //set LIA to low 
-			zTop = 1;				  //congrats, you've now reached the top!!!
+			//zTop = 1;				  //congrats, you've now reached the top!!!
 		}	
 		home = 1;
 		blockInputs = 0;				//clear flag						
@@ -138,7 +161,10 @@ int homeSet(void) {
 
 int main(void) {
 	setup();
-	homeSet();
+	uart_init();
+	setupADC(); 
+	sei();
+	//homeSet(); 
 	//turn of everything unless it is actively driven
 	//Turn off pivot motor
 	PORTD &= ~(1 << PD6);     //set PIA to low
@@ -148,12 +174,7 @@ int main(void) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 
 	while(1) {
-		//home button
-		if(!blockInputs) {
-			if(!((PIND & 0x02) >> 0x01)) {
-				homeSet();
-			}
-		}
+		printf("%d\n", voltage);
 		//z-up button
 		if(!blockInputs) {
 			if(!zTop) {
@@ -249,6 +270,11 @@ int main(void) {
 				}		
 			}
 		}
+		//home button
+		if(!blockInputs) {
+			if(!((PINB & 0x20) >> 0x05)) {
+				homeSet();
+			}
+		}
 	}
 }
-
