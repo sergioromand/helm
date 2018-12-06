@@ -4,6 +4,7 @@
 
 #include <avr/io.h>
 #include "util/delay.h"
+#include "uart.h"
 
 
 int blockInputs;
@@ -138,7 +139,8 @@ int homeSet(void) {
 
 int main(void) {
 	setup();
-	homeSet();
+	uart_init();
+	homeSet(); 
 	//turn of everything unless it is actively driven
 	//Turn off pivot motor
 	PORTD &= ~(1 << PD6);     //set PIA to low
