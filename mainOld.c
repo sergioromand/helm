@@ -20,11 +20,11 @@ int setup(void) {
 	//Set the input and output pins
 
 	//inputs
-	DDRD &= ~(1 << PD1);	 //home
+	DDRD &= ~(1 << PB4);	 //home
 	DDRD &= ~(1 << PD2);     //Z-up
 	DDRD &= ~(1 << PD3);     //Z-down
 	DDRD &= ~(1 << PD4);     //Pivot
-	PORTD |= (1 << PD1); 
+	PORTD |= (1 << PB4); 
 	PORTD |= (1 << PD2);     //set to pull-up
 	PORTD |= (1 << PD3);
 	PORTD |= (1 << PD4); 
@@ -130,7 +130,7 @@ int homeSet(void) {
 			_delay_ms(linDelay);
 			//done driving
 			PORTB &= ~(1 << PB0);     //set LIA to low 
-			zTop = 1;				  //congrats, you've now reached the top!!!
+			//zTop = 1;				  //congrats, you've now reached the top!!!
 		}	
 		home = 1;
 		blockInputs = 0;				//clear flag						
@@ -139,7 +139,7 @@ int homeSet(void) {
 
 int main(void) {
 	setup();
-	uart_init();
+	//uart_init();
 	homeSet(); 
 	//turn of everything unless it is actively driven
 	//Turn off pivot motor
@@ -152,7 +152,7 @@ int main(void) {
 	while(1) {
 		//home button
 		if(!blockInputs) {
-			if(!((PIND & 0x02) >> 0x01)) {
+			if(!((PINB & 0x10) >> 0x04)) {
 				homeSet();
 			}
 		}
