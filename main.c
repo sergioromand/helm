@@ -22,7 +22,7 @@ void startConversion() {
 void setupADC() {
 	ADMUX |= (1 << REFS0); 
 	ADMUX |= (1 << MUX0); 
-	ADMUX |= (1 << MUX2); 
+	ADMUX |= (1 << MUX1); 
 	ADCSRA |= (1 << ADEN); 
 	ADCSRA |= (1 << ADIE); 
 	ADCSRA |=  (1 << ADPS0); 
@@ -68,9 +68,9 @@ int setup(void) {
 	PORTC |= (1 << PC2); 
 
 	//Kill Switches (from actuation)
-	DDRC &= ~(1 << PC3);    //Kill-Switch Home
+	DDRC &= ~(1 << PC5);    //Kill-Switch Home
 	DDRC &= ~(1 << PC4);	//Kill-Switch Away
-	PORTC |= (1 << PC3);	//set to pull-up
+	PORTC |= (1 << PC5);	//set to pull-up
 	PORTC |= (1 << PC4); 
 
 
@@ -94,7 +94,7 @@ int setup(void) {
 	TCCR0B |= 0x08;	
 	TCCR0B |= 0x05;		//turn on
 	OCR0A = 400;		//freq
-	OCR0B = 15;		//duty cycle
+	OCR0B = 25;		//duty cycle
 
 	//Initial board status 
 	blockInputs = 0;			//inputs ready to be received
@@ -114,7 +114,7 @@ int rotation(int speed) {
 		//Turn on pivot motor
 		PORTD &= ~(1 << PD6);     //set PIA to low
 		PORTD |= (1 << PD7);     //set PIB to high
-		while ((PINC & 0x08) >> 0x03) {
+		while ((PINC & 0x20) >> 0x05) {
 		}
 		PORTD &= ~(1 << PD7);     //set PIB to low
 	}
@@ -164,7 +164,7 @@ int main(void) {
 	uart_init();
 	setupADC(); 
 	sei();
-	//homeSet(); 
+	homeSet(); 
 	//turn of everything unless it is actively driven
 	//Turn off pivot motor
 	PORTD &= ~(1 << PD6);     //set PIA to low
@@ -174,8 +174,8 @@ int main(void) {
 	PORTB &= ~(1 << PB3);     //set LIB to low
 
 	while(1) {
-		printf("%d\n", voltage);
 		//z-up button
+		printf("%d\n", voltage);
 		if(!blockInputs) {
 			if(!zTop) {
 				if((!((PIND & 0x04) >> 0x02))) {
@@ -222,7 +222,8 @@ int main(void) {
 				PORTB &= ~(1 << PB0);	  //set LIA to low
 				PORTB |= (1 << PB3);	  //set LIB to high
 				//drive until there's no more input
-				while(!((PIND & 0x08) >> 0x03) & voltage < 600) {
+				while(!((PIND & 0x08) >> 0x03) & voltage < 300) {
+					printf("%d\n", voltage);
 				}
 				//done driving
 				PORTB &= ~(1 << PB3);     //set LIB to low 
@@ -239,7 +240,8 @@ int main(void) {
 				PORTB &= ~(1 << PB0);	  //set LIA to low
 				PORTB |= (1 << PB3);	  //set LIB to high
 				//drive until there's no more input
-				while(!((PINC & 0x02) >> 0x01) & voltage < 600) {
+				while(!((PINC & 0x02) >> 0x01) & voltage < 300) {
+					printf("%d\n", voltage);
 				}
 				//done driving
 				PORTB &= ~(1 << PB3);     //set LIB to low 
